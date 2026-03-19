@@ -187,21 +187,37 @@
         }
 
         async function callGemini(prompt, sys, isJson = false) {
-            if (!apiKey) {
-                alert("請先在程式碼中填入 API Key！");
-                return;
-            }
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                systemInstruction: { parts: [{ text: sys }] },
-                generationConfig: isJson ? { responseMimeType: "application/json" } : {}
-            };
-            const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            const result = await response.json();
-            return result.candidates?.[0]?.content?.parts?.[0]?.text;
-        }
+    if (!apiKey || apiKey === "") {
+        alert("請輸入有效的 API Key！");
+        return;
+    }
+    // 使用更穩定的 1.5 Flash 版本
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    const payload = {
+        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: { parts: [{ text: sys }] },
+        generationConfig: isJson ? { responseMimeType: "application/json" } : {}
+    };
 
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        
+        if (result.error) {
+            console.error("API Error:", result.error.message);
+            throw new Error(result.error.message);
+        }
+        return result.candidates[0].content.parts[0].text;
+    } catch (e) {
+        console.error("Connection Failed:", e);
+        throw e;
+    }
+}
         const SCENARIOS = [
             { cat: "學習", title: "功課拖延與橡皮擦", desc: "返工攰到死，見個仔坐咗兩粒鐘仲喺度切橡皮擦，一粒字都冇寫過。明天要交功課...", choices: [
                 { t: "拍檯鬧佢：「你係咪想做垃圾？再唔寫我撕爛啲書！」", s: 40, g: 60, msg: "這是很多香港家長常見的生存反應。高壓下，威脅止痛但無助教育，會導致孩子大腦進入凍結狀態。" },
